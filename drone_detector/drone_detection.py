@@ -18,8 +18,8 @@ from pathlib import Path
 from ultralytics import YOLO
 
 # --- Paths ---
-MODEL_WEIGHTS = r"S:\IntelliJ\Projects\ES_Drone_Detection\drone_detector\Yolo26n_trained\weights\best.pt"
-VIDEO_PATH = r"S:\IntelliJ\Projects\ES_Drone_Detection\drone_detector\video_test\gopro_006.mp4"
+MODEL_WEIGHTS = "Yolo26n_trained/weights/best.pt"
+VIDEO_PATH = "video_test/gopro_006.mp4"
 
 # Annotation Logic
 ANNOTATION_PATH_PRIMARY = ""
