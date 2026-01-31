@@ -18,8 +18,8 @@ from pathlib import Path
 from ultralytics import YOLO
 
 # --- Paths ---
-MODEL_WEIGHTS = "Yolo26n_trained/weights/best.pt"
-VIDEO_PATH = "video_test/dji_mavick_distant_hillside.avi"
+MODEL_WEIGHTS = r"S:\IntelliJ\Projects\ES_Drone_Detection\drone_detector\Yolo26n_trained\weights\best.pt"
+VIDEO_PATH = r"S:\IntelliJ\Projects\ES_Drone_Detection\drone_detector\video_test\gopro_006.mp4"
 
 # Annotation Logic
 ANNOTATION_PATH_PRIMARY = ""
@@ -112,7 +112,7 @@ WINDOW_FIT_TO_SCREEN = True
 WINDOW_SCALE = 0.9  # fraction of screen (fit-to-window)
 
 # --- Output ---
-SAVE_VIDEO = False
+SAVE_VIDEO = True
 
 # Save alert-window frames (10 inference frames) when window reaches ALERT_REQUIRE_HITS.
 # Saves images with ONLY the detected drone box (no logs/ROIs/gates). Works for any mode.
