@@ -26,6 +26,18 @@ ENV/
 build/
 dist/
 *.egg-info/
+dist/
+build/
+*.egg
+
+
+# Node
+node_modules/
+frontend/node_modules/
+
+
+# Development/training scripts
+scripts/
 
 # --- YOLOv11 / Ultralytics Training ---
 # Ignore training results and pretrained_weights
