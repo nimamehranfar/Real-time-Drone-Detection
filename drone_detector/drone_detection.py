@@ -17,9 +17,11 @@ from typing import List, Tuple, Optional, Dict
 from pathlib import Path
 from ultralytics import YOLO
 
+_THIS_DIR = Path(__file__).resolve().parent
+
 # --- Paths ---
-MODEL_WEIGHTS = "Yolo26n_trained/weights/best.pt"
-VIDEO_PATH = "video_test/gopro_006.mp4"
+MODEL_WEIGHTS = os.path.join(_THIS_DIR, "Yolo26n_trained/weights/best.pt")
+VIDEO_PATH = os.path.join(_THIS_DIR, "video_test/gopro_006.mp4")
 
 # Annotation Logic
 ANNOTATION_PATH_PRIMARY = ""
@@ -28,7 +30,7 @@ ANNOTATION_PATH_PRIMARY = ""
 ANNOTATION_PATH_FALLBACK = str(Path(VIDEO_PATH).with_suffix(".txt"))
 ANNOTATION_PATH = ANNOTATION_PATH_PRIMARY if os.path.exists(ANNOTATION_PATH_PRIMARY) else ANNOTATION_PATH_FALLBACK
 
-OUTPUT_ROOT = "demo_outputs"
+OUTPUT_ROOT = os.path.join(_THIS_DIR, "demo_outputs")
 
 # --- Inference Policy ---
 INFER_FPS = 5  # Target YOLO inference calls per second (stride-based)
@@ -120,6 +122,28 @@ SAVE_ALERT_WINDOW_FRAMES = True
 ALERT_WINDOW_SAVE_SUBDIR = "saved_alert_windows"
 
 DRONE_LABEL = "drone"
+
+
+# --- ESP32 hooks (mock; override from GUI if needed) ---
+def send_alert_to_esp():
+    """Called once per ALERT event edge (mock). Override in GUI/production."""
+    print("[ESP] ALERT")
+
+
+def send_warning_to_esp():
+    """Called once per WARNING event edge (mock). Override in GUI/production."""
+    print("[ESP] WARNING")
+
+
+def apply_runtime_config(**kwargs):
+    """
+    Update module-level configuration variables at runtime.
+    Only existing names are accepted; unknown keys are ignored.
+    """
+    g = globals()
+    for k, v in kwargs.items():
+        if k in g:
+            g[k] = v
 
 
 def xywh_to_xyxy(x, y, w, h):
@@ -451,8 +475,11 @@ def infer_roi_and_project_to_frame(model, drone_cls_id, img_bgr, roi_rect, conf,
 def main():
     os.makedirs(OUTPUT_ROOT, exist_ok=True)
 
-    GT_DATA = load_annotations(ANNOTATION_PATH, DRONE_LABEL)
-    print(f"Loaded GT for {len(GT_DATA)} frames from: {ANNOTATION_PATH}")
+    # Annotation path: primary if exists, otherwise fallback to VIDEO_PATH with .txt extension
+    annotation_path_fallback = str(Path(VIDEO_PATH).with_suffix(".txt"))
+    annotation_path = ANNOTATION_PATH_PRIMARY if (ANNOTATION_PATH_PRIMARY and os.path.exists(ANNOTATION_PATH_PRIMARY)) else annotation_path_fallback
+    GT_DATA = load_annotations(annotation_path, DRONE_LABEL)
+    print(f"Loaded GT for {len(GT_DATA)} frames from: {annotation_path}")
 
     model, names, DRONE_CLASS_ID = build_model()
     print("DRONE_CLASS_ID =", DRONE_CLASS_ID, "names =", names)
@@ -1008,10 +1035,24 @@ def main():
                     # reset after event decision + start cooldown
                     if alert_active and not last_alert_state:
                         count_alert_events += 1
-                        alert_cooldown_left = max(alert_cooldown_left, int(round(float(ALERT_COOLDOWN_S) * float(INFER_FPS))))
+                        try:
+                            send_alert_to_esp()
+                        except Exception:
+                            pass
+                        alert_cooldown_left = max(
+                            alert_cooldown_left,
+                            int(round(float(ALERT_COOLDOWN_S) * float(INFER_FPS)))
+                        )
                     if warning_active and not last_warning_state:
                         count_warning_events += 1
-                        warn_cooldown_left = max(warn_cooldown_left, int(round(float(WARNING_COOLDOWN_S) * float(INFER_FPS))))
+                        try:
+                            send_warning_to_esp()
+                        except Exception:
+                            pass
+                        warn_cooldown_left = max(
+                            warn_cooldown_left,
+                            int(round(float(WARNING_COOLDOWN_S) * float(INFER_FPS)))
+                        )
 
                     temporal_alert.reset()
                     win_alert.clear()
@@ -1022,15 +1063,22 @@ def main():
             else:
                 # normal counting
                 alert_active = bool(alert_active_pre)
-
                 if warning_active and not last_warning_state:
                     count_warning_events += 1
+                    try:
+                        send_warning_to_esp()
+                    except Exception:
+                        pass
                     if warn_cooldown_frames > 0:
                         warn_cooldown_left = warn_cooldown_frames
                         temporal_warning.reset()
                         win_warning.clear()
                 if alert_active and not last_alert_state:
                     count_alert_events += 1
+                    try:
+                        send_alert_to_esp()
+                    except Exception:
+                        pass
                     if alert_cooldown_frames > 0:
                         alert_cooldown_left = alert_cooldown_frames
                         temporal_alert.reset()
@@ -1490,7 +1538,7 @@ def main():
 
         "model_weights": str(MODEL_WEIGHTS),
         "video_path": str(VIDEO_PATH),
-        "annotation_path": str(ANNOTATION_PATH),
+        "annotation_path": str(annotation_path),
     }
 
     detail_csv_path = os.path.join(OUTPUT_ROOT, "demo_runs_detailed.csv")

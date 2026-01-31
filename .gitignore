@@ -35,7 +35,6 @@ build/
 node_modules/
 frontend/node_modules/
 
-
 # Development/training scripts
 scripts/
 
@@ -59,6 +58,8 @@ data/*.tar.gz
 drone_detector/video_test/2019_10_16_C0003_4613_mavic.*
 drone_detector/video_test/dji_mavick_distant_hillside.*
 drone_detector/video_test/gopro_006.*
+drone_detector/demo_outputs/*.mp4
+drone_detector/demo_outputs/saved_alert_windows
 video_benchmark_outputs/
 drone_detector/yolov5/
 benchmarks/
