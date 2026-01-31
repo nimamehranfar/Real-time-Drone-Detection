@@ -14,6 +14,7 @@ Run:
 from __future__ import annotations
 
 import importlib
+import importlib.util
 import sys
 import traceback
 from pathlib import Path
@@ -23,11 +24,17 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 
 def _load_detector_module() -> object:
+    """Load the detector module that lives next to this GUI file.
+
+    This keeps the demo self-contained (no package layout assumptions).
+    """
+    # 1) Normal import if the working directory / PYTHONPATH already supports it
     try:
         from drone_detector import drone_detection as det
         return det
     except Exception:
         pass
+
 
 class _DetectorWorker(QtCore.QThread):
     sig_done = QtCore.Signal()
@@ -161,53 +168,43 @@ class DroneDetectionGUI(QtWidgets.QMainWindow):
 
         outer.addWidget(header)
 
-        # Main split
+
+        # Main split: left event log, right config (same width)
         body = QtWidgets.QHBoxLayout()
         body.setSpacing(14)
         outer.addLayout(body, 1)
 
-        # Left: big "preview placeholder" (we keep OpenCV window external)
-        preview_card = QtWidgets.QFrame()
-        preview_card.setObjectName("Card")
-        pv = QtWidgets.QVBoxLayout(preview_card)
-        pv.setContentsMargins(18, 18, 18, 18)
-        pv.setSpacing(10)
+        # Left: Event log
+        log_card = QtWidgets.QFrame()
+        log_card.setObjectName("Card")
+        log_l = QtWidgets.QVBoxLayout(log_card)
+        log_l.setContentsMargins(14, 14, 14, 14)
+        log_l.setSpacing(10)
 
-        pv_title = QtWidgets.QLabel("Video Preview")
-        pv_title.setObjectName("SectionTitle")
-        pv.addWidget(pv_title)
+        log_l.addWidget(self._section_label("Event log (WARNING / ALERT)"))
+        self.txt_log = QtWidgets.QTextEdit()
+        self.txt_log.setReadOnly(True)
+        log_l.addWidget(self.txt_log, 1)
 
-        hint = QtWidgets.QLabel(
-            "The detector renders frames in the OpenCV window.\n"
-            "Controls there:\n"
-            "  • p: pause/resume\n"
-            "  • q or ESC: quit\n"
-        )
-        hint.setStyleSheet("color: #94a3b8;")
-        hint.setAlignment(QtCore.Qt.AlignCenter)
-        hint.setMinimumHeight(240)
+        log_footer = QtWidgets.QLabel("The detector displays video in the OpenCV window (p: pause, q/ESC: quit).")
+        log_footer.setStyleSheet("color: #94a3b8;")
+        log_l.addWidget(log_footer)
 
-        pv.addStretch(1)
-        pv.addWidget(hint, 1)
-        pv.addStretch(1)
+        body.addWidget(log_card, 1)
 
-        body.addWidget(preview_card, 2)
-
-        # Right: controls (scrollable) + log
-        right_col = QtWidgets.QVBoxLayout()
-        right_col.setSpacing(14)
-        body.addLayout(right_col, 1)
-
-        # Scroll area for controls
+        # Right: Config (scrollable)
         controls_card = QtWidgets.QFrame()
         controls_card.setObjectName("Card")
         controls_l = QtWidgets.QVBoxLayout(controls_card)
         controls_l.setContentsMargins(12, 12, 12, 12)
+        controls_l.setSpacing(10)
+
+        controls_l.addWidget(self._section_label("Config"))
 
         scroll = QtWidgets.QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QtWidgets.QFrame.NoFrame)
-        controls_l.addWidget(scroll)
+        controls_l.addWidget(scroll, 1)
 
         controls_inner = QtWidgets.QWidget()
         scroll.setWidget(controls_inner)
@@ -225,7 +222,7 @@ class DroneDetectionGUI(QtWidgets.QMainWindow):
         row.addWidget(btn_browse)
         form.addLayout(row)
 
-        # --- Core options
+        # --- Detection options
         form.addWidget(self._section_label("Detection options"))
 
         self.cb_cascade = QtWidgets.QComboBox()
@@ -244,7 +241,7 @@ class DroneDetectionGUI(QtWidgets.QMainWindow):
         self.spin_infer_fps.setValue(float(getattr(self.det, "INFER_FPS", 5)))
         form.addWidget(self._labeled_widget("INFER_FPS (stride-based)", self.spin_infer_fps))
 
-        # --- Overlay options
+        # --- Overlay
         form.addWidget(self._section_label("Overlay"))
         self.cb_log_mode = QtWidgets.QComboBox()
         self.cb_log_mode.addItems(["off", "full", "windows_big"])
@@ -263,7 +260,7 @@ class DroneDetectionGUI(QtWidgets.QMainWindow):
         self.chk_show_cascade.setChecked(bool(getattr(self.det, "SHOW_CASCADE", False)))
         form.addWidget(self.chk_show_cascade)
 
-        # --- Output
+        # --- Outputs
         form.addWidget(self._section_label("Outputs"))
         self.chk_save_video = QtWidgets.QCheckBox("SAVE_VIDEO")
         self.chk_save_video.setChecked(bool(getattr(self.det, "SAVE_VIDEO", True)))
@@ -287,9 +284,9 @@ class DroneDetectionGUI(QtWidgets.QMainWindow):
         self.spin_alert_cd.setValue(float(getattr(self.det, "ALERT_COOLDOWN_S", 3.0)))
         form.addWidget(self._labeled_widget("ALERT_COOLDOWN_S", self.spin_alert_cd))
 
-        form.addSpacing(6)
+        form.addStretch(1)
 
-        # --- Run row
+        # Run row (fixed at the bottom of the card)
         run_row = QtWidgets.QHBoxLayout()
         self.btn_run = QtWidgets.QPushButton("Run")
         self.btn_run.setObjectName("Primary")
@@ -301,31 +298,17 @@ class DroneDetectionGUI(QtWidgets.QMainWindow):
 
         run_row.addWidget(self.btn_run, 1)
         run_row.addWidget(self.lbl_run_state)
-        form.addLayout(run_row)
+        controls_l.addLayout(run_row)
 
-        form.addStretch(1)
-        right_col.addWidget(controls_card, 2)
+        body.addWidget(controls_card, 1)
 
-        # Log card
-        log_card = QtWidgets.QFrame()
-        log_card.setObjectName("Card")
-        log_l = QtWidgets.QVBoxLayout(log_card)
-        log_l.setContentsMargins(14, 14, 14, 14)
-        log_l.setSpacing(10)
-
-        log_l.addWidget(self._section_label("Event log (WARNING / ALERT)"))
-        self.txt_log = QtWidgets.QTextEdit()
-        self.txt_log.setReadOnly(True)
-        log_l.addWidget(self.txt_log, 1)
-
+        # Initial log text
         self._append_log(
             "Ready.\n"
             "Notes:\n"
             " • Video is displayed in the OpenCV window.\n"
             " • Close it with q or ESC to end a run.\n"
         )
-
-        right_col.addWidget(log_card, 3)
 
     def _section_label(self, text: str) -> QtWidgets.QLabel:
         lab = QtWidgets.QLabel(text)

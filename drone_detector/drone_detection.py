@@ -118,6 +118,12 @@ WINDOW_NAME = "Drone Detection Demo"
 WINDOW_FIT_TO_SCREEN = True
 WINDOW_SCALE = 0.9  # fraction of screen (fit-to-window)
 
+# --- Playback pacing (OpenCV live window) ---
+# If True, the OpenCV display is paced to the source video FPS (scaled by PLAYBACK_SPEED).
+# If False, frames display as fast as processing allows (can look like "2x speed" when inference is light).
+PACE_LIVE_PLAYBACK_TO_SOURCE_FPS = True
+PLAYBACK_SPEED = 1.0  # 1.0=normal, 0.5=slow motion, 2.0=double speed (live display only)
+
 # --- Output ---
 SAVE_VIDEO = True
 
@@ -500,6 +506,12 @@ def main():
 
     stride = max(1, int(round(fps / float(INFER_FPS))))
     print(f"Res: {W}x{H}, FPS: {fps:.2f}, Stride: {stride}, Frames: {total_frames}")
+
+    # Live playback pacing uses the SOURCE FPS so the OpenCV window matches normal playback speed.
+    # Without this, stride-based inference can make the loop run faster than real-time.
+    frame_period_s = 1.0 / float(fps) if float(fps) > 0 else (1.0 / 30.0)
+    playback_speed = float(PLAYBACK_SPEED) if float(PLAYBACK_SPEED) > 0 else 1.0
+    next_frame_deadline = time.perf_counter()
 
     ROI_SIZE_LOCAL = int(ROI_SIZE)
 
@@ -1318,7 +1330,16 @@ def main():
                 # ensure the full frame is visible by resizing to fitted display size
                 show_img = cv2.resize(vis, (disp_w, disp_h), interpolation=cv2.INTER_AREA)
 
+            # Pace live playback to the source FPS (optional).
+            if bool(PACE_LIVE_PLAYBACK_TO_SOURCE_FPS):
+                now = time.perf_counter()
+                if now < next_frame_deadline:
+                    time.sleep(next_frame_deadline - now)
+                # Schedule the next frame based on source FPS and requested speed.
+                next_frame_deadline = max(next_frame_deadline + (frame_period_s / playback_speed), time.perf_counter())
+
             cv2.imshow(WINDOW_NAME, show_img)
+            # waitKey still required for window events; keep it tiny and let pacing do the timing
             k = cv2.waitKey(1) & 0xFF
 
             # Quit
@@ -1339,6 +1360,10 @@ def main():
                     if cv2.getWindowProperty(WINDOW_NAME, cv2.WND_PROP_VISIBLE) < 1:
                         ret = False
                         break
+                # After pause, reset pacing deadline so playback resumes smoothly.
+                if bool(PACE_LIVE_PLAYBACK_TO_SOURCE_FPS) and ret:
+                    next_frame_deadline = time.perf_counter() + (frame_period_s / playback_speed)
+
                 if not ret:
                     break
 
