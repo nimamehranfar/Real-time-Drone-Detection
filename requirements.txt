@@ -1,21 +1,11 @@
-# Drone Detection System - Requirements
-# Note: PyTorch is installed separately by setup.py (CUDA or CPU version)
-
-# YOLO object detection
-ultralytics
-
-# Video processing
-opencv-python
-
-# Backend API
-fastapi>=0.100.0
-# uvicorn[standard]>=0.23.0
-# websockets>=11.0
-pydantic>=2.0.0
-
-# YouTube support
-# yt-dlp>=2023.0.0
-
-# Utilities
-# numpy>=1.24.0
-# requests>=2.31.0
+# Drone Detection Demo (video-based) - requirements
+# Install:
+#   pip install -r requirements.txt
+#
+# Notes:
+# - 'ultralytics' will pull in torch as a dependency; pip typically installs a CPU build by default.
+#   If you want GPU acceleration, install the appropriate PyTorch build for your CUDA setup before (or after) this.
+ultralytics>=8.2.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+PySide6>=6.6.0
