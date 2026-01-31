@@ -17,9 +17,11 @@ import importlib
 import importlib.util
 import sys
 import traceback
+import threading
 from pathlib import Path
 from typing import Optional
 
+import requests
 from PySide6 import QtCore, QtGui, QtWidgets
 
 
@@ -28,12 +30,18 @@ def _load_detector_module() -> object:
 
     This keeps the demo self-contained (no package layout assumptions).
     """
+    # Add parent folder (ES_Drone_Detection) to sys.path so we can import drone_detector
+    parent = Path(__file__).resolve().parent.parent
+    if str(parent) not in sys.path:
+        sys.path.insert(0, str(parent))
+
     # 1) Normal import if the working directory / PYTHONPATH already supports it
     try:
         from drone_detector import drone_detection as det
         return det
     except Exception:
-        pass
+        traceback.print_exc()
+        return None
 
 
 class _DetectorWorker(QtCore.QThread):
@@ -284,6 +292,21 @@ class DroneDetectionGUI(QtWidgets.QMainWindow):
         self.spin_alert_cd.setValue(float(getattr(self.det, "ALERT_COOLDOWN_S", 3.0)))
         form.addWidget(self._labeled_widget("ALERT_COOLDOWN_S", self.spin_alert_cd))
 
+        # --- ESP32 Connection
+        form.addWidget(self._section_label("ESP32 Connection"))
+        row_esp = QtWidgets.QHBoxLayout()
+        self.in_esp32_ip = QtWidgets.QLineEdit("drone-alert.local:5000")
+        self.in_esp32_ip.setPlaceholderText("e.g. 192.168.1.100:5000 or drone-alert.local:5000")
+        self.btn_test_esp32 = QtWidgets.QPushButton("Test")
+        self.btn_test_esp32.clicked.connect(self._test_esp32_connection)
+        row_esp.addWidget(self.in_esp32_ip, 1)
+        row_esp.addWidget(self.btn_test_esp32)
+        form.addLayout(row_esp)
+
+        self.chk_esp32_enabled = QtWidgets.QCheckBox("Enable ESP32 Alerts")
+        self.chk_esp32_enabled.setChecked(True)
+        form.addWidget(self.chk_esp32_enabled)
+
         form.addStretch(1)
 
         # Run row (fixed at the bottom of the card)
@@ -326,6 +349,7 @@ class DroneDetectionGUI(QtWidgets.QMainWindow):
         lay.addWidget(widget, 1)
         return wrap
 
+    @QtCore.Slot(str)
     def _append_log(self, msg: str) -> None:
         self.txt_log.moveCursor(QtGui.QTextCursor.End)
         self.txt_log.insertPlainText(msg if msg.endswith("\n") else msg + "\n")
@@ -364,10 +388,84 @@ class DroneDetectionGUI(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def _on_warning(self) -> None:
         self._append_log("WARNING event edge triggered.")
+        if self.chk_esp32_enabled.isChecked():
+            self._send_esp32_request("/alert/warning", {"message": "Possible drone detected"})
 
     @QtCore.Slot()
     def _on_alert(self) -> None:
         self._append_log("ALERT event edge triggered.")
+        if self.chk_esp32_enabled.isChecked():
+            self._send_esp32_request("/alert/drone", {"message": "DRONE CONFIRMED!"})
+
+    def _get_esp32_base_url(self) -> str:
+        """Get the base URL for ESP32 from the input field."""
+        addr = self.in_esp32_ip.text().strip()
+        if not addr:
+            return ""
+        if not addr.startswith("http"):
+            addr = f"http://{addr}"
+        return addr
+
+    def _send_esp32_request(self, endpoint: str, data: dict = None) -> None:
+        """Send HTTP POST request to ESP32 in a background thread."""
+        base_url = self._get_esp32_base_url()
+        if not base_url:
+            return
+
+        def do_request():
+            try:
+                url = f"{base_url}{endpoint}"
+                resp = requests.post(url, json=data, timeout=2)
+                if resp.status_code == 200:
+                    QtCore.QMetaObject.invokeMethod(
+                        self, "_append_log",
+                        QtCore.Qt.QueuedConnection,
+                        QtCore.Q_ARG(str, f"ESP32: {endpoint} OK")
+                    )
+            except Exception as e:
+                QtCore.QMetaObject.invokeMethod(
+                    self, "_append_log",
+                    QtCore.Qt.QueuedConnection,
+                    QtCore.Q_ARG(str, f"ESP32 error: {e}")
+                )
+
+        threading.Thread(target=do_request, daemon=True).start()
+
+    def _test_esp32_connection(self) -> None:
+        """Test connection to ESP32 by calling /status endpoint."""
+        base_url = self._get_esp32_base_url()
+        if not base_url:
+            self._append_log("ESP32: No address specified")
+            return
+
+        self._append_log(f"Testing ESP32 at {base_url}...")
+
+        def do_test():
+            try:
+                resp = requests.get(f"{base_url}/status", timeout=3)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    QtCore.QMetaObject.invokeMethod(
+                        self, "_append_log",
+                        QtCore.Qt.QueuedConnection,
+                        QtCore.Q_ARG(str, f"ESP32 connected! IP: {data.get('ip', 'unknown')}")
+                    )
+                    # Send a test beep
+                    requests.post(f"{base_url}/test", timeout=2)
+                else:
+                    QtCore.QMetaObject.invokeMethod(
+                        self, "_append_log",
+                        QtCore.Qt.QueuedConnection,
+                        QtCore.Q_ARG(str, f"ESP32 error: HTTP {resp.status_code}")
+                    )
+            except Exception as e:
+                QtCore.QMetaObject.invokeMethod(
+                    self, "_append_log",
+                    QtCore.Qt.QueuedConnection,
+                    QtCore.Q_ARG(str, f"ESP32 connection failed: {e}")
+                )
+
+        threading.Thread(target=do_test, daemon=True).start()
 
     # -------------------------
     # Actions
