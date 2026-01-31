@@ -106,6 +106,11 @@ SHOW_CASCADE = False
 TOPLEFT_LOG_MODE = "windows_big"  # "off" | "full" | "windows_big"
 SHOW_SOURCE_TAGS = False  # show small source tags on prediction boxes (FULL/GROI/VER)
 
+# Draw final prediction boxes on non-inference (HOLD) frames as well.
+# True  => boxes persist between inference frames (default, stable UI)
+# False => boxes are drawn ONLY on inference frames; HOLD frames show no prediction rectangles.
+DRAW_PRED_BOXES_ON_HOLD_FRAMES = True
+
 # --- Real-time viewing ---
 SHOW_WINDOW = True
 PAUSE_KEY = 'p'  # press to pause/resume when SHOW_WINDOW=True
@@ -1220,7 +1225,8 @@ def main():
                 draw_box(vis, gb, (255, 255, 0), 2, label=f"GT{i + 1}", anchor="tr")
 
         # Draw predictions (final)
-        for i, pb in enumerate(last_infer_final_boxes[:3]):
+        boxes_to_draw = last_infer_final_boxes if (bool(DRAW_PRED_BOXES_ON_HOLD_FRAMES) or bool(is_infer)) else []
+        for i, pb in enumerate(boxes_to_draw[:3]):
             src = last_infer_final_sources[i] if i < len(last_infer_final_sources) else "?"
             if src == "full":
                 col = (0, 255, 0)
