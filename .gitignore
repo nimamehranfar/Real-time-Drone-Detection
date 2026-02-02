@@ -48,6 +48,7 @@ main_GUI/yolo26n_trained
 *.engine
 *.pb
 *.tflite
+!drone_detector/yolo26n_trained/weights/best.pt
 
 # Ignore local datasets (if stored in project)
 datasets/
