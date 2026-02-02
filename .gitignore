@@ -42,7 +42,7 @@ scripts/
 # Ignore training results and pretrained_weights
 runs/
 drone_detector/pretrained_weights
-drone_detector/Yolo26n_trained/weights
+main_GUI/yolo26n_trained
 *.pt
 *.onnx
 *.engine
@@ -64,6 +64,7 @@ video_benchmark_outputs/
 drone_detector/yolov5/
 benchmarks/
 backup/
+imgs/
 drone_detector/commands.txt
 
 # --- Logs and Cache ---

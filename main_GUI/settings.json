@@ -1,0 +1,21 @@
+{
+  "cascade_mode": "None",
+  "temporal_roi_enabled": true,
+  "infer_fps": 5,
+  "show_gate": true,
+  "show_troi": true,
+  "show_cascade": true,
+  "log_mode": "full",
+  "save_video": false,
+  "save_alert_frames": false,
+  "warning_cooldown": 3.0,
+  "alert_cooldown": 3.0,
+  "detect_conf": 0.25,
+  "roi_size": 640,
+  "warning_window_size": 10,
+  "warning_require_hits": 9,
+  "alert_window_size": 10,
+  "alert_require_hits": 9,
+  "cascade_trigger_conf": 0.4,
+  "cascade_accept_conf": 0.4
+}

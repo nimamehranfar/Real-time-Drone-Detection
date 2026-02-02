@@ -1,0 +1,69 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Data files (large)
+datasets/
+video_test/
+youtube_temp/
+test_dataset/
+ground_truth_data/
+ground_truth_v2/
+*.zip
+*.db
+
+# IDE
+.vscode/
+.idea/
+
+# Node
+node_modules/
+ui/node_modules/
+
+# Models (large training runs)
+drone_finetune_full_mixed/
+drone_retrain/
+runs/
+models/
+model/
+
+# Include yolo26n_trained folder but exclude training checkpoints
+yolo26n_trained/*.jpg
+yolo26n_trained/*.png
+yolo26n_trained/*.csv
+yolo26n_trained/weights/last.pt
+yolo26n_trained/weights/epoch*.pt
+
+# Temp files
+*.tmp
+~$*
+t.txt
+
+# Output directories
+output/
+outputs/
+demo_outputs/
+compare_output/
+comparison_results/
+saved_alert_windows/
+pr_curve.png
+
+# Documentation (keep out of repo except README)
+docs/
+clean_export/
+
+# Word docs
+*.docx
+
+# Backup/duplicate files
+*\ (1).*
+*\ (2).*
+*\ (3).*
+/src/
+/backend/
+
+nima/

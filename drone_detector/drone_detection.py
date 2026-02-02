@@ -1259,7 +1259,12 @@ def main():
             for roi in last_infer_guided_rois[:int(MAX_GUIDED_ROIS)]:
                 draw_box(vis, roi, (255, 0, 255), 1, label="TemporalROI", anchor="bl")
 
-        # Cascaded ROI Confirmation ROIs are log-only (do NOT draw boxes on video)
+        # Cascaded
+        if val_show_verify:
+            for roi in last_infer_guided_rois[:int(MAX_GUIDED_ROIS)]:
+                draw_box(vis, roi, (255, 0, 255), 1, label="TemporalROI", anchor="bl")
+
+        # Cascaded ROI Confirmation ROIs are log-only
         # (verification passes are not part of the video frame stream)
 
         # Gates (prev/current)
