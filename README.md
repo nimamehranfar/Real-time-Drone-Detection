@@ -1,4 +1,4 @@
-# Drone Detection Demo (Video-based)
+# Real-time Drone Detection (Video-based)
 
 A desktop demo app built around a **single-class YOLO detector (drone)**.  
 It runs detection on a video, draws a real-time overlay in an **OpenCV window**, and triggers **warning / alert** events with cooldowns.
