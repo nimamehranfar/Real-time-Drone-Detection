@@ -13,7 +13,7 @@ The detector was trained on a large mixed drone dataset with hard-negative backg
 - **Recall:** 91.5%
 - **mAP@50:** 95.1%
 - **Average speed per image:** 0.7 ms preprocessing, 1.4 ms inference, 0.1 ms postprocessing  
-These values are reported in the project report’s held-out test evaluation and model comparison sections. :contentReference[oaicite:1]{index=1}
+These values are reported in the project report’s held-out test evaluation and model comparison sections.
 
 ---
 
@@ -27,10 +27,10 @@ This system is designed for **real-time video-based drone detection**, where raw
 - optional cascaded verification,
 - and warning/alert decision logic.
 
-The report explicitly states that the system is a **demonstrative detector emphasizing real-time behavior, temporal decision logic, and inference-aware performance accounting**, rather than a benchmark framework. :contentReference[oaicite:2]{index=2}
+The report explicitly states that the system is a **demonstrative detector emphasizing real-time behavior, temporal decision logic, and inference-aware performance accounting**, rather than a benchmark framework.
 
 ### Main reported result
-The trained **YOLOv26n** model achieved the following on the held-out test split: :contentReference[oaicite:3]{index=3}
+The trained **YOLOv26n** model achieved the following on the held-out test split:
 
 | Metric | Value |
 |---|---:|
@@ -42,13 +42,13 @@ The trained **YOLOv26n** model achieved the following on the held-out test split
 | Postprocessing time | 0.1 ms / image |
 
 ### Why this matters
-The report compares this model to several public GitHub drone detection implementations and shows that this project’s detector achieves the best overall balance between **recall**, **precision**, and **latency** among those compared models. :contentReference[oaicite:4]{index=4}
+The report compares this model to several public GitHub drone detection implementations and shows that this project’s detector achieves the best overall balance between **recall**, **precision**, and **latency** among those compared models.
 
 ---
 
 ## Performance Comparison with Public GitHub Drone Detection Models
 
-**Table 3.3** from the report, rebuilt here as a Markdown table. :contentReference[oaicite:5]{index=5}
+**Table 3.3** from the report, rebuilt here as a Markdown table.
 
 | Model (GitHub) | Precision | Recall | mAP@50 | Inference Time (ms / image) |
 |---|---:|---:|---:|---:|
@@ -61,7 +61,7 @@ The report compares this model to several public GitHub drone detection implemen
 The main advantage is not just high precision. It is the combination of:
 - **very high recall** for a safety-oriented detector,
 - **low total latency** suitable for real-time video,
-- and support for extra logic such as ROI propagation and cascaded verification without making the system unusable in practice. :contentReference[oaicite:6]{index=6}
+- and support for extra logic such as ROI propagation and cascaded verification without making the system unusable in practice. 
 
 ---
 
@@ -81,11 +81,11 @@ The main advantage is not just high precision. It is the combination of:
 
 ## Small-Object Alert Reliability
 
-The project explicitly separates **warning** and **alert** behavior for very small detections. Detections below a minimum area can still contribute to warnings, but not all of them are allowed to trigger alerts. The report shows that recall drops sharply for small bounding boxes, which is why the alert pipeline uses area-based gating. :contentReference[oaicite:9]{index=9}
+The project explicitly separates **warning** and **alert** behavior for very small detections. Detections below a minimum area can still contribute to warnings, but not all of them are allowed to trigger alerts. The report shows that recall drops sharply for small bounding boxes, which is why the alert pipeline uses area-based gating.
 
 ### Model Performance for Small Bounding-Box Areas
 
-**Table 10.1** from the report, rebuilt here as a Markdown table. :contentReference[oaicite:10]{index=10}
+**Table 10.1** from the report, rebuilt here as a Markdown table.
 
 | Area Threshold (px²) | Precision< | Recall< | F1< |
 |---|---:|---:|---:|
@@ -96,7 +96,7 @@ The project explicitly separates **warning** and **alert** behavior for very sma
 | 900 | 0.964 | 0.820 | 0.886 |
 
 ### Alert gating used in the system
-According to the report: :contentReference[oaicite:11]{index=11}
+According to the report:
 - **Direct alert acceptance:** bounding-box area **≥ 25 × 25 = 625 px²**
 - **Cascade-assisted alert acceptance:** bounding-box area **≥ 15 × 15 = 225 px²** and confirmed by cascaded ROI confirmation
 - **Below 225 px²:** warning-only, never allowed to contribute to the alert window
@@ -108,10 +108,10 @@ According to the report: :contentReference[oaicite:11]{index=11}
 The final curated training corpus contains **172,022 images**, split into:
 - **80% training**
 - **10% validation**
-- **10% test** :contentReference[oaicite:12]{index=12}
+- **10% test** 
 
 ### Primary drone detection datasets
-These provide the positive drone samples used to train the detector: :contentReference[oaicite:13]{index=13}
+These provide the positive drone samples used to train the detector:
 
 1. **WOSDETC (Bird vs Drone)**  
    Video-based dataset containing birds and drones. One frame sampled every 2 frames. Drone instances kept as positives; birds treated as background.
@@ -129,7 +129,7 @@ These provide the positive drone samples used to train the detector: :contentRef
    Image dataset focused on micro aerial vehicles and challenging small-scale drone examples.
 
 ### False-positive suppression / background datasets
-These were included as background-only or hard-negative data to reduce false detections, especially birds and urban motion artifacts. :contentReference[oaicite:14]{index=14}
+These were included as background-only or hard-negative data to reduce false detections, especially birds and urban motion artifacts.
 
 1. **AirBird**  
    Bird-only dataset used to suppress avian false positives.
@@ -151,13 +151,13 @@ These were included as background-only or hard-negative data to reduce false det
 ### Why the dataset mix matters
 The dataset was intentionally built to do two things:
 - maximize drone appearance diversity across altitude, scale, background, and motion,
-- suppress common false positives such as birds, traffic, and surveillance-scene motion. :contentReference[oaicite:15]{index=15}
+- suppress common false positives such as birds, traffic, and surveillance-scene motion.
 
 ---
 
 ## Training Setup
 
-The final training configuration reported for the best-performing model is: :contentReference[oaicite:16]{index=16}
+The final training configuration reported for the best-performing model is:
 
 | Parameter | Value |
 |---|---|
@@ -175,36 +175,36 @@ The final training configuration reported for the best-performing model is: :con
 | IoU Threshold | 0.7 |
 | Mixed Precision (AMP) | Enabled |
 
-Training was run on a **cloud-based NVIDIA RTX 3090 GPU**. :contentReference[oaicite:17]{index=17}
+Training was run on a **cloud-based NVIDIA RTX 3090 GPU**.
 
 ---
 
 ## How the Detection Pipeline Works
 
 ### 1) Stride-based inference
-The detector does **not** run YOLO on every video frame. Instead, inference is executed every **N frames**, derived from `INFER_FPS` and the source video FPS. Non-inference frames reuse the last inference state. The report and current README both describe this as a core design rule. :contentReference[oaicite:18]{index=18} :contentReference[oaicite:19]{index=19}
+The detector does **not** run YOLO on every video frame. Instead, inference is executed every **N frames**, derived from `INFER_FPS` and the source video FPS. Non-inference frames reuse the last inference state. The report and current README both describe this as a core design rule.
 
 ### 2) Temporal ROI Propagation
-At inference frame **t**, detections from the previous inference frame are used to generate square ROIs for frame **t+1**. Up to **3 ROIs** are generated, each with side length equal to the detector input size (**640 px**), and ROI generation excludes boxes below the area threshold used for ROI eligibility. If no valid ROI exists, the system falls back to full-frame inference. :contentReference[oaicite:20]{index=20}
+At inference frame **t**, detections from the previous inference frame are used to generate square ROIs for frame **t+1**. Up to **3 ROIs** are generated, each with side length equal to the detector input size (**640 px**), and ROI generation excludes boxes below the area threshold used for ROI eligibility. If no valid ROI exists, the system falls back to full-frame inference.
 
 ### 3) Cascaded ROI Confirmation
 The detector can optionally run a second-pass YOLO verification stage on selected detections. The report describes several cascade modes, including:
 - **off**
 - **triggered cascade** for small / low-confidence detections
 - **always-on cascade**
-- **alert-window cascade** based on average confidence over the alert window. :contentReference[oaicite:21]{index=21}
+- **alert-window cascade** based on average confidence over the alert window.
 
 ### 4) Temporal Continuity
 Continuity is evaluated using bounding-box overlap between consecutive inference frames. A detection is treated as continuous only if:
 
-**IoU(Bt−1, Bt) > 0.1** :contentReference[oaicite:22]{index=22}
+**IoU(Bt−1, Bt) > 0.1** :
 
 This continuity gate affects warning/alert decision stability and suppresses transient false positives.
 
 ### 5) Warning / Alert logic
 Warning and alert events are based on a FIFO rolling window over inference frames. In the default configuration:
 - **window size W = 10**
-- **trigger threshold T = 9** :contentReference[oaicite:23]{index=23}
+- **trigger threshold T = 9** :
 
 Warnings are more permissive; alerts require stronger spatial and confidence conditions.
 
@@ -215,7 +215,7 @@ Warnings are more permissive; alerts require stronger spatial and confidence con
 - `drone_detection.py` — the demo detector (core logic + OpenCV rendering + outputs)
 - `drone_detection_gui.py` — desktop GUI runner (Qt / PySide6) for configs and event log
 
-This matches the current repo README, which describes the GUI as a runner for configs and logs while video still renders in the OpenCV window. :contentReference[oaicite:24]{index=24}
+This matches the current repo README, which describes the GUI as a runner for configs and logs while video still renders in the OpenCV window. 
 
 ---
 
